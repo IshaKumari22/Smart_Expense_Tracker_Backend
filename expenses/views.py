@@ -3,38 +3,83 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from .models import Expense
 from django.views.decorators.http import require_GET,require_http_methods
+from django.views.decorators.http import require_POST
+import joblib
+import os
+
+
+# 🔄 Load model (only once when server starts)
+MODEL_PATH = os.path.join(os.path.dirname(__file__), '../ml_model/expense_classifier.joblib')
+model = joblib.load(MODEL_PATH)
 
 @csrf_exempt
+@require_POST
 def submit_expense(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
+    try:
+        data = json.loads(request.body)
 
-            description = data.get("description")
-            amount = data.get("amount")
-            category = data.get("category", "")  # optional for now
+        description = data.get("description")
+        amount = data.get("amount")
+        date = data.get("date")
+        category = data.get("category", "")
 
-            expense = Expense.objects.create(
-                description=description,
-                amount=amount,
-                category=category
-            )       
-# 
-            return JsonResponse({
-                "message": "Expense saved successfully",
-                "expense": {
-                    "id": expense.id,
-                    "description": expense.description,
-                    "amount": expense.amount,
-                    "category": expense.category,
-                    "date": expense.date,
-                }
-            })
-# 
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
+        # 🔮 Predict category if not provided
+        if not category:
+            category = model.predict([description])[0]
 
-    return JsonResponse({"error": "Only POST method allowed"}, status=405)
+        expense = Expense.objects.create(
+            description=description,
+            amount=amount,
+            category=category,
+            date=date
+        )
+
+        return JsonResponse({
+            "message": "Expense saved successfully",
+            "expense": {
+                "id": expense.id,
+                "description": expense.description,
+                "amount": expense.amount,
+                "category": expense.category,
+                "date": expense.date,
+            }
+        })
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+    
+
+# @csrf_exempt
+# def submit_expense(request):
+#     if request.method == "POST":
+#         try:
+#             data = json.loads(request.body)
+
+#             description = data.get("description")
+#             amount = data.get("amount")
+#             category = data.get("category", "")  # optional for now
+
+#             expense = Expense.objects.create(
+#                 description=description,
+#                 amount=amount,
+#                 category=category
+#             )       
+# # 
+#             return JsonResponse({
+#                 "message": "Expense saved successfully",
+#                 "expense": {
+#                     "id": expense.id,
+#                     "description": expense.description,
+#                     "amount": expense.amount,
+#                     "category": expense.category,
+#                     "date": expense.date,
+#                 }
+#             })
+# # 
+#         except Exception as e:
+#             return JsonResponse({"error": str(e)}, status=400)
+
+#     return JsonResponse({"error": "Only POST method allowed"}, status=405)
 
 
 @require_GET
@@ -54,7 +99,7 @@ def get_all_expenses(request):
         }
         for expense in expenses
     ]
-    return JsonResponse({"expense": data}, safe=False)
+    return JsonResponse({"expenses": data}, safe=False)
 
 @csrf_exempt
 @require_http_methods(["DELETE"])
@@ -65,3 +110,6 @@ def delete_expense(request, expense_id):
         return JsonResponse({"message": f"Expense with id {expense_id} deleted successfully"})
     except Expense.DoesNotExist:
         return JsonResponse({"error": "Expense not found"}, status=404)
+
+
+
