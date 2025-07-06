@@ -30,7 +30,7 @@ def submit_expense(request):
                     "date": expense.date,
                 }
             })
-
+# 
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 
