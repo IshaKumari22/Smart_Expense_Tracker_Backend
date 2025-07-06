@@ -19,7 +19,7 @@ def submit_expense(request):
                 amount=amount,
                 category=category
             )       
-
+# 
             return JsonResponse({
                 "message": "Expense saved successfully",
                 "expense": {
