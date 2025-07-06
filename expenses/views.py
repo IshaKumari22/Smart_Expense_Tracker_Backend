@@ -44,7 +44,7 @@ def hello_world(request):
 @require_GET
 def get_all_expenses(request):
     expenses = Expense.objects.all().order_by('-date')  # latest first
-    datf = [
+    data = [
         {
             "id": expense.id,
             "description": expense.description,
@@ -54,7 +54,7 @@ def get_all_expenses(request):
         }
         for expense in expenses
     ]
-    return JsonResponse({"expenses": datf}, safe=False)
+    return JsonResponse({"expense": data}, safe=False)
 
 @csrf_exempt
 @require_http_methods(["DELETE"])
