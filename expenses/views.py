@@ -7,7 +7,7 @@ from django.views.decorators.http import require_POST
 import joblib
 import os
 
-
+# with using ai
 # 🔄 Load model (only once when server starts)
 MODEL_PATH = os.path.join(os.path.dirname(__file__), '../ml_model/expense_classifier.joblib')
 model = joblib.load(MODEL_PATH)
@@ -49,6 +49,8 @@ def submit_expense(request):
         return JsonResponse({"error": str(e)}, status=400)
     
 
+
+# without using ai
 # @csrf_exempt
 # def submit_expense(request):
 #     if request.method == "POST":
